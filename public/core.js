@@ -33,16 +33,22 @@ function swap(text, from, to) {
 }
 
 /* Авторский список + равнозначные сокращения. Первый вариант — целевой.
-   Возвращает [{ text, norm }]. Знак в конце — часть фразы, его тоже печатают. */
+   Возвращает [{ text, norm, key }]: key — то, что нужно нажать (запятые необязательны).
+   Знак в конце — часть фразы, его тоже печатают. */
 function buildVariants(list) {
   const out = [], seen = new Set();
   const add = t => { const k = norm(t); if (!seen.has(k) && out.length < MAX_VARIANTS) { seen.add(k); out.push(t); } };
   list.forEach(add);
   for (let i = 0; i < out.length; i++) {
-    for (const [a, b] of EXPAND) { const r = swap(out[i], a, b); if (r) add(r); }
+    for (const [a, b] of EXPAND) {
+      // «it's been» — это has, а «don't you» в вопросе не разворачивается в «do not you»
+      const tail = a.endsWith("'s") ? '(been|got)' : a.endsWith("n't") ? '(i|you|we|they|he|she|it)' : '';
+      if (tail && new RegExp(escRe(a) + ' ' + tail + "(?=$|[^A-Za-z'])", 'i').test(out[i])) continue;
+      const r = swap(out[i], a, b); if (r) add(r);
+    }
     for (const [a, b] of CONTRACT) { const r = swap(out[i], a, b); if (r) add(r); }
   }
-  return out.map(full => ({ text: full, norm: norm(full), tail: '' }));
+  return out.map(full => { const n = norm(full); return { text: full, norm: n, key: n.replace(/,/g, ''), tail: '' }; });
 }
 
 /* Ловушка срабатывает, когда набранное заканчивается на after, а неверная клавиша входит в keys. */

@@ -87,11 +87,11 @@ window.DECKS.push({
       traps: [
         { after: 'how long i', keys: 't', say: 'В вопросе глагол перед it: how long *will it* take.' }
       ] },
-    { id: 'it-can-you-hear', ru: 'Меня слышно?', ctx: 'созвон',
-      en: ['Can you hear me?', 'Can you hear me okay?', 'Can everyone hear me?', 'Can you all hear me?'],
-      note: 'Про связь — *Can you hear me?* А вот Do you hear me? звучит как «ты меня вообще слушаешь?».' },
-    { id: 'it-on-mute', ru: 'Ты на мьюте.', ctx: 'созвон',
-      en: ["You're on mute.", "You're muted.", "I think you're on mute.", "I think you're muted."],
+    { id: 'it-can-you-hear', ru: 'Меня всем слышно?', ctx: 'созвон',
+      en: ['Can everyone hear me?', 'Can you all hear me?', 'Can everybody hear me?', 'Can everyone hear me okay?'],
+      note: 'Про связь — *Can everyone hear me?* А вот Do you hear me? звучит как «ты меня вообще слушаешь?».' },
+    { id: 'it-on-mute', ru: 'Кажется, ты на мьюте.', ctx: 'созвон',
+      en: ["I think you're on mute.", "I think you're muted.", "It looks like you're on mute.", "You might be on mute."],
       note: '*On mute* — с выключенным микрофоном. Предлог *on*, как в on hold и on call.' },
     { id: 'it-share-screen', ru: 'Давай я покажу экран.', ctx: 'созвон',
       en: ['Let me share my screen.', 'Let me just share my screen.', "I'll share my screen.", 'Let me show you my screen.'],

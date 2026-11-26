@@ -99,34 +99,59 @@ function armNudge() {
   nudge = setTimeout(() => { if (A && !A.done && !ended && (!A.msg || A.msg.kind === 'idle')) { A.msg = { kind: 'idle', html: A.kind === 'trap' ? 'Застрял? <b>Tab</b> откроет слово.' : 'Застрял? <b>Tab</b> откроет следующую букву.' }; renderMsg(); } }, 9000);
 }
 const setMsg = (kind, html) => { A.msg = { kind, html }; };
-const candidates = prefix => A.vars.filter(v => v.norm.startsWith(prefix));
+/* Запятая необязательна: варианты сравниваются без запятых (v.key), а в тексте она встаёт сама.
+   «No ice please» и «No ice, please» — один и тот же набор клавиш. */
+const keyLen = (norm, i) => { let k = 0; for (let j = 0; j < i; j++) if (norm[j] !== ',') k++; return k; };                              // сколько клавиш до позиции i
+const charPos = (norm, k) => { for (let j = 0; j < norm.length; j++) if (norm[j] !== ',' && k-- === 0) return j; return norm.length; };  // позиция k-й клавиши в тексте
+const nextPos = (norm, k) => k === 0 ? 0 : charPos(norm, k - 1) + 1;                                                                    // позиция сразу после k клавиш
+const candidates = keys => A.vars.filter(v => v.key.startsWith(keys));
 const gapAt = i => A.gaps ? A.gaps.find(g => i >= g.s && i < g.e) : null;
 const graded = () => A.kind === 'recall' || A.kind === 'retry';
+
+/* Перейти на другой вариант, сохранив набранное: позиции пересчитываются через клавиши, без запятых. */
+function rebase(next) {
+  if (next === A.cur) return;
+  const old = A.cur.norm, nw = next.norm, L = keyLen(old, A.n);
+  const move = src => {
+    const out = Array.isArray(src) ? [] : {};
+    for (const i in src) { const j = +i; if (j <= A.n && old[j] !== ',' && src[i] !== undefined) out[charPos(nw, keyLen(old, j))] = src[i]; }
+    return out;
+  };
+  const ok = move(A.ok), n = nextPos(nw, L);
+  for (let j = 0; j < n; j++) if (nw[j] === ',') ok[j] = true;
+  A.hint = move(A.hint); A.miss = move(A.miss); A.pause = move(A.pause); A.slip = move(A.slip);
+  A.ghost = A.revealed ? nw.length : A.ghost > A.n ? nextPos(nw, keyLen(old, A.ghost)) : 0;
+  A.ok = ok; A.n = n; A.cur = next;
+}
 
 /* ---------- набор ---------- */
 function type(ch) {
   if (!A || A.done || ended) return;
   if (/[а-яё]/i.test(ch)) { A.wrong = ''; setMsg('warn', 'Раскладка русская. Переключись на <b>EN</b>, это не ошибка.'); render(); return; }
   startTimer(); armNudge();
-  const c = norm(ch), typed = A.cur.norm.slice(0, A.n);
+  const c = norm(ch), typed = A.cur.norm.slice(0, A.n), keys = typed.replace(/,/g, '');
   if (A.gaps && c === ' ' && A.cur.norm[A.n] !== ' ') return;         // в раунде ловушек пробелы между словами уже стоят
-  let add = c, cand = candidates(typed + c);
-  if (!cand.length && c === ' ') { cand = candidates(typed + ', '); if (cand.length) add = ', '; }
-  if (!cand.length && (c === '.' || c === '!')) { const o = c === '.' ? '!' : '.'; cand = candidates(typed + o); if (cand.length) add = o; }   // точка и восклицательный равнозначны
+  let add = c, cand;
+  if (c === ',') cand = candidates(keys).filter(v => v.norm[nextPos(v.norm, keys.length)] === ',');
+  else {
+    cand = candidates(keys + c);
+    if (!cand.length && (c === '.' || c === '!')) { const o = c === '.' ? '!' : '.'; cand = candidates(keys + o); if (cand.length) add = o; }   // точка и восклицательный равнозначны
+  }
   const ok = cand.length > 0;
-  if (ok) accept(add, cand); else reject(c, typed);
+  if (ok) accept(add, cand); else reject(c, typed, keys);
   render(); stats();
   Keyboard.press(ch, ok);
 }
 function accept(add, cand) {
   const now = performance.now();
   let switched = false;
-  if (!cand.includes(A.cur)) { A.cur = cand[0]; A.ghost = A.revealed ? A.cur.norm.length : 0; switched = true; }
+  if (!cand.includes(A.cur)) { rebase(cand[0]); switched = true; }
+  if (add !== ',' && A.cur.norm[A.n] === ',') add = ',' + add;        // запятая встаёт сама
   for (let k = 0; k < add.length; k++) {
     const i = A.n;
     A.ok[i] = true;
     A.hint[i] = A.kind !== 'intro' && i < A.ghost;
-    if (graded() && A.cur.norm[i] !== ' ') { if (A.hint[i]) hintCh++; else cleanCh++; }
+    if (graded() && A.cur.norm[i] !== ' ' && A.cur.norm[i] !== ',') { if (A.hint[i]) hintCh++; else cleanCh++; }
     if (i === 0 || A.cur.norm[i - 1] === ' ') A.pause[i] = now - A.lastT;
     A.n++;
   }
@@ -142,26 +167,28 @@ function accept(add, cand) {
   }
   /* Набранное уже совпало с коротким вариантом, но есть и длиннее («I agree» и «I agree with you»):
      не обрываем фразу, а даём выбор — Enter или дописать. */
-  const full = cand.find(v => v.norm.length === A.n);
+  const L = keyLen(A.cur.norm, A.n);
+  const full = A.n >= A.cur.norm.length ? A.cur : cand.find(v => v.key.length === L);
   A.endable = null;
-  if (full && !cand.some(v => v.norm.length > A.n)) { A.cur = full; complete(); }
+  if (full && !cand.some(v => v.key.length > L)) complete();
   else if (full) { A.endable = full; setMsg('ok', 'Так уже верно: <b>Enter</b>. Или допиши фразу до конца.'); }
 }
 function endHere() {
   if (!A || A.done || !A.endable) return;
-  A.cur = A.endable; A.endable = null;
+  rebase(A.endable); A.endable = null;
   complete(); render(); stats();
 }
-function reject(c, typed) {
+function reject(c, typed, keys) {
   keysBad++; A.wrong = c;
-  const cand = candidates(typed), exp = new Set(cand.map(v => v.norm[A.n]));
+  const L = keys.length, cand = candidates(keys), exp = new Set(cand.map(v => v.key[L]));
   const trap = graded() ? trapFor(A.p.traps, typed, c) : null;
   const marks = [...exp].filter(Boolean);
   if (marks.length && marks.every(m => '.?!'.includes(m))) {                 // фраза дописана, остался знак: память тут ни при чём
     setMsg('idle', marks.includes('?') ? 'Это вопрос: в конце нужен <b>?</b>' : 'Фраза дописана. Осталась точка.');
   }
+  else if (c === ',') setMsg('idle', 'Запятая здесь не нужна.');
   else if (trap) { memMiss(); A.miss[A.n]++; A.trapped = true; setMsg('trap', md(trap.say)); }
-  else if (cand.some(v => v.norm[A.n] === "'" && v.norm[A.n + 1] === c)) setMsg('idle', 'Здесь нужен апостроф.');
+  else if (cand.some(v => v.key[L] === "'" && v.key[L + 1] === c)) setMsg('idle', 'Здесь нужен апостроф.');
   else if (!A.slip[A.n] && /[a-z0-9]/.test(c) && [...exp].some(e => e && (ADJ[e] || '').indexOf(c) >= 0)) { A.slip[A.n] = 1; setMsg('idle', 'Похоже на опечатку: соседняя клавиша. Не считается.'); }
   else {
     const auto = memMiss();
@@ -542,8 +569,11 @@ document.addEventListener('keydown', e => {
     else if (e.key === 'Enter') { e.preventDefault(); pickDeck(sel); }
     else if (e.key.startsWith('Arrow') || e.key === 'Tab') {
       e.preventDefault();
-      const back = e.key === 'ArrowLeft' || e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey);
-      sel = (sel + (back ? DECKS.length - 1 : 1)) % DECKS.length; drawDecks();
+      const n = DECKS.length;
+      if (e.key === 'ArrowDown') sel = sel + 2 < n ? sel + 2 : sel;
+      else if (e.key === 'ArrowUp') sel = sel - 2 >= 0 ? sel - 2 : sel;
+      else sel = (sel + (e.key === 'ArrowLeft' || (e.key === 'Tab' && e.shiftKey) ? n - 1 : 1)) % n;
+      drawDecks();
     }
     return;
   }
@@ -587,6 +617,15 @@ $('resetBtn').onclick = () => {
 document.querySelectorAll('button').forEach(b => b.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') e.preventDefault(); }));
 window.addEventListener('blur', () => $('card').classList.add('blurred'));
 window.addEventListener('focus', () => $('card').classList.remove('blurred'));
+
+/* Для проверки колод в /#debug: открыть карточку любой фразы. */
+if (DEBUG) window.__card = (id, kind) => {
+  const p = DECKS.flatMap(d => d.phrases).find(x => x.id === id);
+  clearInterval(timer); Speech.stop();
+  Q = [{ p, kind: kind || 'recall' }]; qi = 0; ended = false; trapsBuilt = true; results = []; sessTraps = new Map();
+  $('end').hidden = true; $('card').hidden = false; document.body.classList.remove('ended');
+  startCard();
+};
 
 /* ---------- старт ---------- */
 Speech.init(renderSound);

@@ -178,11 +178,11 @@ body.nokb #kbBtn{color:var(--faint)}
 .legend kbd{margin:0 4px 0 0}
 
 /* выбор темы */
-#modal{position:fixed;inset:0;background:#0b0b0cb8;backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:12vh 16px;z-index:10}
+#modal{position:fixed;inset:0;background:#0b0b0cb8;backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:7vh 16px;z-index:10}
 .sheet{width:100%;max-width:620px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 80px #000a;overflow:hidden;animation:pop .18s ease-out}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
-#deckGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px}
-.dk{display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:12px;background:var(--panel2);border:1px solid transparent;cursor:pointer;text-align:left;min-width:0}
+#deckGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;max-height:68vh;overflow:auto;scrollbar-width:thin}
+.dk{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:12px;background:var(--panel2);border:1px solid transparent;cursor:pointer;text-align:left;min-width:0}
 .dk b{font:700 18px var(--mono)}
 .dk span{font-size:13px;color:var(--dim);line-height:1.4}
 .dk em{font:600 12px var(--mono);font-style:normal;color:var(--dim);margin-top:6px}

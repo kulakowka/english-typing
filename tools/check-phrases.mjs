@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Проверка колод: node tools/check-phrases.mjs
+/* Проверка колод: node tools/check-phrases.mjs [id колоды — показать только её ошибки]
    Ловит то, что сломает тренажёр или запутает ученика: дубли id, недостижимые ловушки,
    символы, которых нет на клавиатуре, слишком длинные фразы. */
 import { readFileSync, readdirSync } from 'node:fs';
@@ -14,11 +14,14 @@ ctx.DECKS = [];
 const load = f => vm.runInContext(readFileSync(f, 'utf8'), ctx, { filename: f });
 load(join(root, 'core.js'));
 const dir = join(root, 'phrases');
-for (const f of readdirSync(dir).filter(f => f.endsWith('.js')).sort()) load(join(dir, f));
+const only = process.argv[2] || '';
+const errors = [], warns = [];
+for (const f of readdirSync(dir).filter(f => f.endsWith('.js')).sort()) {
+  try { load(join(dir, f)); } catch (e) { errors.push(`[${f.replace(/\.js$/, '')}] файл не загрузился: ${e.message}`); }
+}
 
 const { norm, buildVariants, MAX_VARIANTS } = ctx.Core;
-const errors = [], warns = [];
-const ids = new Set(), rus = new Map();
+const ids = new Set(), rus = new Map(), targets = new Map();
 const MAX_LEN = 64, MIN_WORDS = 2, MAX_WORDS = 11;
 
 for (const deck of ctx.DECKS) {
@@ -50,6 +53,8 @@ for (const deck of ctx.DECKS) {
       if (seen.has(k)) err(`en[${i}] «${e}»: повтор варианта`); seen.add(k);
     });
     const target = p.en[0], words = target.trim().split(/\s+/).length;
+    const tk = norm(target);
+    if (targets.has(tk)) err(`целевая фраза «${target}» уже есть в ${targets.get(tk)}`); else targets.set(tk, p.id);
     if (target.length > MAX_LEN) err(`целевая фраза длиннее ${MAX_LEN} символов (${target.length})`);
     if (words < MIN_WORDS || words > MAX_WORDS) err(`в целевой фразе ${words} слов, нужно от ${MIN_WORDS} до ${MAX_WORDS}`);
     if (!/^[A-Z0-9]/.test(target)) err('целевая фраза начинается не с заглавной буквы');
@@ -88,7 +93,8 @@ for (const deck of ctx.DECKS) {
 }
 
 const total = ctx.DECKS.reduce((n, d) => n + (d.phrases ? d.phrases.length : 0), 0);
-for (const w of warns) console.log('! ' + w);
-for (const e of errors) console.log('✗ ' + e);
-console.log(`\n${ctx.DECKS.map(d => `${d.id}: ${d.phrases ? d.phrases.length : 0}`).join(', ')} · всего ${total} · ошибок ${errors.length} · предупреждений ${warns.length}`);
-process.exit(errors.length ? 1 : 0);
+const mine = line => !only || line.startsWith(`[${only}]`);
+for (const w of warns.filter(mine)) console.log('! ' + w);
+for (const e of errors.filter(mine)) console.log('✗ ' + e);
+console.log(`\n${ctx.DECKS.map(d => `${d.id}: ${d.phrases ? d.phrases.length : 0}`).join(', ')} · всего ${total} · ошибок ${errors.filter(mine).length}${only ? ` в ${only} (во всех колодах ${errors.length})` : ''} · предупреждений ${warns.filter(mine).length}`);
+process.exit(errors.filter(mine).length ? 1 : 0);
