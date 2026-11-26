@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>english_typing — английские фразы по памяти</title>
+<meta name="description" content="Тренажёр английских фраз: видишь русскую фразу, печатаешь английскую по памяти. Подсказки лесенкой, ловушки русскоязычных, повторы по дням. Бесплатно, без регистрации.">
+<link rel="canonical" href="https://english.antonkulakov.com/">
+<meta name="theme-color" content="#18181a">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="english_typing">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:url" content="https://english.antonkulakov.com/">
+<meta property="og:title" content="english_typing — английские фразы по памяти">
+<meta property="og:description" content="Видишь русскую фразу, печатаешь английскую из головы. Ошибки возвращаются завтра.">
+<meta name="author" content="Антон Кулаков">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c1c1e'/><text x='6' y='23' font-family='monospace' font-size='18' font-weight='700' fill='%237ee0a8'>_</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <a class="logo" href="/">english<span>_</span>typing</a>
+  <button id="deckBtn" class="btn deck" title="Сменить тему"><i class="tag">тема</i><span id="deckName"></span><kbd class="mod">K</kbd></button>
+  <div class="spacer"></div>
+  <div id="track" aria-hidden="true"></div>
+  <button id="soundBtn" class="btn" title="Озвучка фразы после набора"><span id="soundLabel">Звук</span><kbd class="mod2">U</kbd></button>
+  <button id="kbBtn" class="btn" title="Показать или скрыть клавиатуру">Пальцы <kbd class="mod2">J</kbd></button>
+</header>
+
+<main>
+  <div class="stats">
+    <div><b id="sMem">—</b><span>по памяти</span></div>
+    <div><b id="sAcc">100%</b><span>точность</span></div>
+    <div><b id="sTime">0:00</b><span>время</span></div>
+    <div><b id="sPos">—</b><span>карточка</span></div>
+    <div class="best"><b id="sStreak">—</b><span>серия</span></div>
+  </div>
+
+  <section id="card" class="card">
+    <div class="bar">
+      <span id="ctx" class="ctx"></span>
+      <span class="sep">·</span>
+      <span id="kind"></span>
+      <span id="blindChip" class="chipb blind" hidden>вслепую</span>
+      <span class="pipwrap"><span id="pipLabel"></span><span id="pips" class="pips"></span></span>
+    </div>
+    <div id="body" class="body">
+      <i class="tag">RU</i><div id="ru"></div>
+      <i class="tag en">EN</i><div id="line" aria-label="Поле ответа"></div>
+      <div id="msg" aria-live="polite"></div>
+      <div id="after" hidden></div>
+    </div>
+    <div class="foot">
+      <button id="hintBtn" class="btn" title="Подсказка: буква, потом слово, потом вся фраза">Подсказка <kbd>Tab</kbd></button>
+      <span id="steps" class="steps"><i data-l="1">буква</i>→<i data-l="2">слово</i>→<i data-l="3">фраза</i></span>
+      <span id="cost" class="cost">с подсказкой фраза вернётся раньше</span>
+      <button id="skipBtn" class="btn" hidden title="Пропустить знакомство и сразу печатать по памяти">Знаю эту фразу <kbd>Enter</kbd></button>
+      <span class="spacer"></span>
+      <button id="listenBtn" class="btn" hidden title="Послушать фразу. С Shift — медленно">Послушать <kbd>Пробел</kbd></button>
+      <button id="nextBtn" class="btn primary" hidden>Дальше <kbd>Enter</kbd></button>
+    </div>
+    <div id="progress"><i></i></div>
+    <div class="focus-hint">Кликни сюда и печатай по-английски</div>
+    <input id="mob" type="text" inputmode="text" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-hidden="true" tabindex="-1">
+  </section>
+
+  <section id="end" hidden>
+    <div class="hero">
+      <div id="eBig" class="big"></div>
+      <div id="eSub" class="sub"></div>
+    </div>
+    <div id="eRecap" class="recap"></div>
+    <div class="cols">
+      <div class="box">
+        <h3>Лестница памяти</h3>
+        <p>Набрал по памяти — фраза поднимается и приходит реже. Подсказка — шаг вниз.</p>
+        <div id="eLadder" class="ladder"></div>
+      </div>
+      <div class="box">
+        <h3>Неделя</h3>
+        <p id="eNext"></p>
+        <div id="eWeek" class="week"></div>
+      </div>
+    </div>
+    <div id="eWordsBox" class="box words" hidden>
+      <h3>Твои ловушки</h3>
+      <p>Слова, на которых ты спотыкаешься. Два чистых набора подряд — и слово уходит из списка.</p>
+      <div id="eWords" class="chips"></div>
+    </div>
+    <div class="actions">
+      <button id="againBtn" class="btn primary"></button>
+      <button id="deckBtn2" class="btn">Другая тема <kbd class="mod">K</kbd></button>
+      <button id="ffBtn" class="btn demo" hidden></button>
+    </div>
+  </section>
+
+  <section id="kbwrap">
+    <div id="kb"></div>
+    <div id="hands"></div>
+    <div id="finger"></div>
+  </section>
+
+  <div class="legend" id="legend">
+    <span><kbd>Tab</kbd> подсказка: буква → слово → фраза</span>
+    <span><kbd>Enter</kbd> дальше</span>
+    <span><kbd>Пробел</kbd> послушать, когда фраза дописана</span>
+    <span><kbd class="mod2">J</kbd> клавиатура</span>
+    <span>регистр не важен, знак в конце нужен</span>
+  </div>
+</main>
+
+<div id="modal" hidden>
+  <div class="sheet" role="dialog" aria-label="Выбор темы">
+    <div class="sheet-head">Тема <kbd>Esc</kbd></div>
+    <div id="deckGrid"></div>
+    <div class="sheet-foot"><span><kbd>←</kbd><kbd>→</kbd> выбрать</span><span><kbd>Enter</kbd> начать</span><span>прогресс у каждой темы свой</span></div>
+  </div>
+</div>
+
+<footer>
+  Прогресс хранится только в этом браузере · <button id="resetBtn">сбросить прогресс</button> ·
+  старший брат: <a href="https://typing.antonkulakov.com" target="_blank" rel="noopener">code_typing</a><br>
+  Сделал <a href="https://antonkulakov.com">Антон Кулаков</a> ·
+  <a href="https://www.youtube.com/@antonkulakovcom">YouTube</a> ·
+  <a href="https://t.me/antonkulakovcom">Telegram</a> ·
+  <a href="https://github.com/kulakowka/english-typing">GitHub</a>
+</footer>
+
+<script src="core.js"></script>
+<script>window.DECKS = [];</script>
+<script src="phrases/general.js"></script>
+<script src="phrases/it.js"></script>
+<script src="speech.js"></script>
+<script src="keyboard.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
