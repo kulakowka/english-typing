@@ -1,0 +1,45 @@
+window.DECKS.push({
+  id: 'w-verbs-day', kind: 'words', title: 'Действия: каждый день', sub: 'быт, общение, дела по дому',
+  ask: 'Что здесь делают? Нужен глагол.',
+  words: [
+    ['sleep', 'спать', 'a man sleeping in bed'],
+    ['wake up', 'просыпаться', 'a woman waking up in bed and stretching her arms'],
+    ['eat', 'есть', 'a man eating a meal with a fork at a table'],
+    ['drink', 'пить', 'a woman drinking water from a glass'],
+    ['cook', 'готовить', 'a man cooking, stirring a pan on a stove'],
+    ['wash', 'мыть', 'a person washing hands with soap under a faucet'],
+    ['brush', 'чистить щёткой', 'a woman brushing her teeth with a toothbrush'],
+    ['read', 'читать', 'a man reading a book in an armchair'],
+    ['write', 'писать', 'a hand writing in a notebook with a pen'],
+
+    ['draw', 'рисовать карандашом', 'a girl drawing with a pencil on paper'],
+    ['paint', 'красить', 'a man painting a wall with a paint roller'],
+    ['sing', 'петь', 'a woman singing into a microphone on a stage'],
+    ['dance', 'танцевать', 'a couple dancing'],
+    ['listen', 'слушать', 'a young man listening to music in headphones with eyes closed'],
+    ['watch', 'смотреть', 'a family on a sofa watching television, seen from the side'],
+    ['play', 'играть', 'two children playing with toy blocks on the floor'],
+    ['talk|speak|chat', 'разговаривать', 'two friends talking to each other at a cafe table'],
+    ['laugh', 'смеяться', 'a woman laughing out loud'],
+
+    ['cry', 'плакать', 'a child crying with tears on the face'],
+    ['smile', 'улыбаться', 'a man smiling at the camera'],
+    ['hug', 'обнимать', 'two friends hugging'],
+    ['wave', 'махать', 'a woman waving her hand to say hello'],
+    ['shout|yell|scream', 'кричать', 'a man shouting loudly with hands around his mouth'],
+    ['whisper', 'шептать', 'a girl whispering into another girl\'s ear'],
+    ['pay', 'платить', 'a hand paying with a bank card at a payment terminal'],
+    ['shop', 'делать покупки', 'a woman shopping in a supermarket with a shopping cart'],
+    ['type', 'печатать', 'hands typing on a laptop keyboard'],
+
+    ['cut', 'резать', 'hands cutting vegetables with a knife on a cutting board'],
+    ['pour', 'наливать', 'a hand pouring water from a jug into a glass'],
+    ['clean', 'убирать', 'a woman cleaning a table with a cloth and a spray bottle'],
+    ['sweep', 'подметать', 'a man sweeping the floor with a broom'],
+    ['iron', 'гладить', 'a woman ironing a shirt on an ironing board'],
+    ['sew', 'шить', 'hands sewing fabric with a needle and thread'],
+    ['knit', 'вязать', 'hands knitting with knitting needles and yarn'],
+    ['plant', 'сажать', 'hands planting a small seedling in the soil'],
+    ['water', 'поливать', 'a man watering flowers with a watering can']
+  ]
+});

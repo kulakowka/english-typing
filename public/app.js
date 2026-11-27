@@ -15,7 +15,7 @@ const DECKS = window.DECKS.map(d => Object.assign({}, d, {
   phrases: d.kind === 'words'
     ? d.words.map(([en, ru, pic, note]) => {
       const list = en.split('|'), s = slug(list[0]);
-      return { id: d.id + '-' + s, en: list, ru, ctx: d.title.toLowerCase(), note: note || '', img: 'img/' + d.id + '/' + s + '.webp', vars: buildVariants(list) };
+      return { id: d.id + '-' + s, en: list, ru, ctx: d.title.toLowerCase(), note: note || '', ask: d.ask || 'Что на картинке?', img: 'img/' + d.id + '/' + s + '.webp', vars: buildVariants(list) };
     })
     : d.phrases.map(p => Object.assign({}, p, { vars: buildVariants(p.en) }))
 }));
@@ -461,7 +461,7 @@ function renderMsg() {
     m.innerHTML = A.kind === 'intro' ? 'Новое слово. Спиши его, глядя на образец. Уже знаешь? <b>Enter</b> — сразу по памяти.'
       : A.kind === 'trap' ? 'Раунд ловушек: впиши слово ещё раз.'
       : A.kind === 'retry' ? 'То же слово ещё раз. Теперь без подсказок.'
-      : 'Что на картинке? Печатай по-английски. <b>Tab</b> покажет перевод.';
+      : esc(A.p.ask) + ' Печатай по-английски. <b>Tab</b> покажет перевод.';
     return;
   }
   m.innerHTML = A.kind === 'intro' ? 'Новая фраза. Спиши её, глядя на образец. Уже знаешь? <b>Enter</b> — сразу по памяти.'

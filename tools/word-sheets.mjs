@@ -12,7 +12,8 @@ const ctx = vm.createContext({}); ctx.window = ctx; ctx.DECKS = [];
 for (const f of readdirSync(dir).filter(f => f.endsWith('.js')).sort()) vm.runInContext(readFileSync(join(dir, f), 'utf8'), ctx);
 
 /* studio — предметы на одном тёмном фоне; scene — обычные фотографии со своим фоном. */
-const SCENE = { 'w-animals': [0, 1, 2, 3], 'w-city': [0, 1, 2], 'w-nature': [0, 1, 2, 3], 'w-home': [2] };
+const ALL = [0, 1, 2, 3];
+const SCENE = { 'w-animals': ALL, 'w-city': [0, 1, 2], 'w-nature': ALL, 'w-home': [2], 'w-verbs-day': ALL, 'w-verbs-move': ALL, 'w-body': ALL, 'w-jobs': ALL, 'w-feelings': ALL };
 const TAIL = 'No grid lines, no borders, no frames, no text, no letters, no numbers, no labels, no watermarks. Real photography, natural colors and textures, not illustration, not 3D render.';
 const studio = rows => `A contact sheet of nine separate photorealistic studio product photographs arranged in a strict 3 by 3 grid of equal square cells. Every cell has the same solid dark charcoal seamless backdrop (#212124) and soft even studio lighting. One object per cell, the whole object visible, centered, sharp focus, with empty margin around it, not touching the cell edges. ${rows} ${TAIL}`;
 const scene = rows => `A contact sheet of nine separate photorealistic photographs arranged in a strict 3 by 3 grid of equal square cells, edge to edge, each cell a complete square photo. One subject per cell, the whole subject visible and centered, sharp focus, softly blurred natural background. ${rows} ${TAIL}`;

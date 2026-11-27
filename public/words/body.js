@@ -1,0 +1,45 @@
+window.DECKS.push({
+  id: 'w-body', kind: 'words', title: 'Тело', sub: 'лицо, руки, ноги',
+  ask: 'Что на фото крупным планом?',
+  words: [
+    ['head', 'голова', 'a human head seen in profile'],
+    ['face', 'лицо', 'a human face looking straight at the camera'],
+    ['hair', 'волосы', 'long brown hair seen from behind'],
+    ['eye', 'глаз', 'an extreme close-up of one human eye'],
+    ['ear', 'ухо', 'a close-up of a human ear'],
+    ['nose', 'нос', 'a close-up of a human nose'],
+    ['mouth', 'рот', 'a close-up of a wide open mouth'],
+    ['lips', 'губы', 'a close-up of closed lips'],
+    ['teeth', 'зубы', 'a close-up of a smile showing white teeth'],
+
+    ['tongue', 'язык', 'a person sticking out the tongue'],
+    ['neck', 'шея', 'a close-up of a human neck'],
+    ['shoulder', 'плечо', 'a close-up of a bare human shoulder'],
+    ['arm', 'рука от плеча до кисти', 'a whole outstretched human arm'],
+    ['elbow', 'локоть', 'a close-up of a bent elbow'],
+    ['hand', 'кисть руки', 'an open human hand with spread fingers, back of the hand'],
+    ['finger', 'палец руки', 'a close-up of one raised index finger'],
+    ['thumb', 'большой палец', 'a thumbs-up gesture, thumb in focus'],
+    ['nail|fingernail', 'ноготь', 'an extreme close-up of a fingernail'],
+
+    ['back', 'спина', 'a human back in a T-shirt seen from behind'],
+    ['leg', 'нога целиком', 'a whole human leg in shorts, from hip to foot'],
+    ['knee', 'колено', 'a close-up of a bent knee'],
+    ['foot', 'ступня', 'a bare human foot seen from the side'],
+    ['toe|toes', 'палец ноги', 'a close-up of toes on a bare foot'],
+    ['heel', 'пятка', 'a close-up of a bare heel seen from behind'],
+    ['ankle', 'лодыжка', 'a close-up of a human ankle'],
+    ['wrist', 'запястье', 'a close-up of a human wrist'],
+    ['palm', 'ладонь', 'an open palm facing the camera'],
+
+    ['fist', 'кулак', 'a clenched fist'],
+    ['beard', 'борода', 'a close-up of a man\'s thick beard'],
+    ['mustache|moustache', 'усы', 'a close-up of a man\'s mustache with no beard'],
+    ['eyebrow|eyebrows', 'бровь', 'an extreme close-up of an eyebrow'],
+    ['eyelashes|lashes', 'ресницы', 'an extreme close-up of long eyelashes on a closed eye'],
+    ['skeleton', 'скелет', 'an anatomical model of a human skeleton'],
+    ['bone', 'кость', 'a single large bone'],
+    ['muscle|muscles', 'мышца', 'a flexed bicep muscle of an athlete'],
+    ['heart', 'сердце', 'an anatomical model of a human heart']
+  ]
+});

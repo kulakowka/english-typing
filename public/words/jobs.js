@@ -1,0 +1,45 @@
+window.DECKS.push({
+  id: 'w-jobs', kind: 'words', title: 'Профессии', sub: 'кто чем занимается',
+  ask: 'Кто это по профессии?',
+  words: [
+    ['doctor', 'врач', 'a doctor in a white coat with a stethoscope'],
+    ['nurse', 'медсестра', 'a nurse in scrubs holding a syringe'],
+    ['teacher', 'учитель', 'a teacher writing on a blackboard in a classroom'],
+    ['chef|cook', 'повар', 'a chef in a white hat in a restaurant kitchen'],
+    ['waiter|waitress', 'официант', 'a waiter carrying a tray with dishes in a restaurant'],
+    ['pilot', 'пилот', 'an airline pilot in uniform in a cockpit'],
+    ['firefighter|fireman', 'пожарный', 'a firefighter in a helmet and protective gear holding a hose'],
+    ['police officer|policeman|cop', 'полицейский', 'a police officer in uniform on a street'],
+    ['driver', 'водитель', 'a bus driver at the steering wheel of a bus'],
+
+    ['farmer', 'фермер', 'a farmer in a field next to a tractor'],
+    ['builder', 'строитель', 'a construction worker in a hard hat laying bricks'],
+    ['electrician', 'электрик', 'an electrician working on wires in an electrical panel'],
+    ['plumber', 'сантехник', 'a plumber fixing a pipe under a sink'],
+    ['mechanic', 'механик', 'a car mechanic working under the hood of a car'],
+    ['carpenter', 'плотник', 'a carpenter sawing a wooden plank in a workshop'],
+    ['painter|artist', 'художник', 'an artist painting a picture on an easel'],
+    ['photographer', 'фотограф', 'a photographer taking a picture with a camera'],
+    ['musician', 'музыкант', 'a musician playing a violin on a stage'],
+
+    ['scientist', 'учёный', 'a scientist in a lab coat looking into a microscope'],
+    ['engineer', 'инженер', 'an engineer in a hard hat studying blueprints at a construction site'],
+    ['programmer|developer', 'программист', 'a programmer at a desk with code on two monitors'],
+    ['lawyer', 'юрист', 'a lawyer in a suit with a briefcase in front of a courthouse'],
+    ['judge', 'судья', 'a judge in a black robe holding a gavel in a courtroom'],
+    ['dentist', 'стоматолог', 'a dentist examining a patient in a dental chair'],
+    ['vet|veterinarian', 'ветеринар', 'a veterinarian examining a dog on a table'],
+    ['pharmacist', 'фармацевт', 'a pharmacist behind a pharmacy counter with shelves of medicine'],
+    ['hairdresser|barber', 'парикмахер', 'a hairdresser cutting a client\'s hair with scissors'],
+
+    ['baker', 'пекарь', 'a baker taking bread out of an oven'],
+    ['butcher', 'мясник', 'a butcher behind a meat counter'],
+    ['fisherman', 'рыбак', 'a fisherman on a boat pulling a net'],
+    ['soldier', 'солдат', 'a soldier in a camouflage uniform standing at attention'],
+    ['sailor', 'моряк', 'a sailor in a white uniform on the deck of a ship'],
+    ['astronaut', 'космонавт', 'an astronaut in a spacesuit'],
+    ['mail carrier|postman|mailman', 'почтальон', 'a mail carrier delivering letters to a mailbox'],
+    ['cleaner|janitor', 'уборщик', 'a cleaner mopping the floor in an office hallway'],
+    ['cashier', 'кассир', 'a cashier scanning products at a supermarket checkout']
+  ]
+});

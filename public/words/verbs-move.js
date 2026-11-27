@@ -1,0 +1,45 @@
+window.DECKS.push({
+  id: 'w-verbs-move', kind: 'words', title: 'Действия: движение', sub: 'движение, спорт, жесты',
+  ask: 'Что здесь делают? Нужен глагол.',
+  words: [
+    ['run', 'бежать', 'a man running in a park'],
+    ['walk', 'идти пешком', 'a woman walking along a street'],
+    ['jump', 'прыгать', 'a boy jumping high in the air'],
+    ['swim', 'плавать', 'a swimmer swimming in a pool'],
+    ['climb', 'лезть вверх', 'a climber climbing a rock wall'],
+    ['ride', 'ехать верхом', 'a woman riding a bicycle'],
+    ['drive', 'вести машину', 'a man driving a car, seen from the passenger seat'],
+    ['sit', 'сидеть', 'a man sitting on a chair'],
+    ['stand', 'стоять', 'a woman standing straight in an empty room'],
+
+    ['lie down|lie', 'лежать', 'a man lying on his back on the grass'],
+    ['fall', 'падать', 'a man slipping and falling on an icy sidewalk'],
+    ['push', 'толкать', 'a man pushing a heavy box across the floor'],
+    ['pull', 'тянуть', 'a man pulling a thick rope with both hands'],
+    ['carry', 'нести', 'a woman carrying a large cardboard box'],
+    ['throw', 'бросать', 'a boy throwing a ball'],
+    ['catch', 'ловить', 'a girl catching a ball with both hands'],
+    ['kick', 'бить ногой', 'a soccer player kicking a ball'],
+    ['lift', 'поднимать', 'an athlete lifting a barbell above the head'],
+
+    ['dig', 'копать', 'a man digging the ground with a shovel'],
+    ['build', 'строить', 'a worker building a brick wall with a trowel'],
+    ['fix|repair', 'чинить', 'a mechanic fixing a bicycle with a wrench'],
+    ['row', 'грести', 'a man rowing a boat with oars'],
+    ['ski', 'кататься на лыжах', 'a skier skiing down a snowy slope'],
+    ['skate', 'кататься на коньках', 'a woman ice skating on a rink'],
+    ['dive', 'нырять', 'a diver diving into a pool from a springboard'],
+    ['crawl', 'ползти', 'a baby crawling on the floor'],
+    ['stretch', 'тянуться', 'a woman stretching her arms up before exercise'],
+
+    ['kneel', 'стоять на коленях', 'a man kneeling on one knee'],
+    ['bend', 'наклоняться', 'a woman bending forward to touch her toes'],
+    ['hide', 'прятаться', 'a child hiding behind a curtain, peeking out'],
+    ['point', 'показывать пальцем', 'a man pointing at something with his index finger'],
+    ['clap', 'хлопать', 'people clapping their hands'],
+    ['knock', 'стучать', 'a hand knocking on a wooden door'],
+    ['wait', 'ждать', 'a man waiting at a bus stop and looking at his watch'],
+    ['sneeze', 'чихать', 'a woman sneezing into a tissue'],
+    ['yawn', 'зевать', 'a man yawning widely']
+  ]
+});

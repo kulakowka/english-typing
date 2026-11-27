@@ -45,7 +45,7 @@ for (const deck of ctx.DECKS) {
         if (e !== e.trim() || /\s\s/.test(e) || !e) err(`«${e}»: лишние пробелы`);
         if (/[^A-Za-z0-9 '-]/.test(e)) err(`«${e}»: в слове только буквы, цифры, пробел, дефис и апостроф`);
         if (e.split(' ').length > 3) err(`«${e}»: больше трёх слов`);
-        const k = norm(e);
+        const k = norm(e) + '|' + w[1];           // одно и то же слово с другим значением (watch: часы и смотреть) — это два разных слова
         if (targets.has(k)) err(`«${e}» уже есть в ${targets.get(k)}`); else targets.set(k, id);
       }
       if (!existsSync(join(root, 'img', deck.id, slug(list[0]) + '.webp'))) err(`нет картинки img/${deck.id}/${slug(list[0])}.webp`);
