@@ -15,16 +15,16 @@ const load = f => vm.runInContext(readFileSync(f, 'utf8'), ctx, { filename: f })
 load(join(root, 'core.js'));
 const only = process.argv[2] || '';
 const errors = [], warns = [];
-for (const sub of ['phrases', 'words']) {
+for (const sub of ['phrases', 'tenses', 'words']) {
   const dir = join(root, sub);
   if (!existsSync(dir)) continue;
   for (const f of readdirSync(dir).filter(f => f.endsWith('.js')).sort()) {
     try { load(join(dir, f)); } catch (e) { errors.push(`[${f.replace(/\.js$/, '')}] файл не загрузился: ${e.message}`); }
   }
 }
-const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const slug = ctx.Core.slug;
 
-const { norm, buildVariants, MAX_VARIANTS } = ctx.Core;
+const { norm, buildVariants, tenseItems, MAX_VARIANTS } = ctx.Core;
 const ids = new Set(), rus = new Map(), targets = new Map();
 const MAX_LEN = 64, MIN_WORDS = 2, MAX_WORDS = 11;
 
@@ -51,6 +51,14 @@ for (const deck of ctx.DECKS) {
       if (!existsSync(join(root, 'img', deck.id, slug(list[0]) + '.webp'))) err(`нет картинки img/${deck.id}/${slug(list[0])}.webp`);
     }
     continue;
+  }
+  /* Тема-время проверяется как тема с фразами: строки разворачиваются тем же кодом, что и в тренажёре. */
+  if (deck.kind === 'tense') {
+    if (!deck.forms || ['+', '-', '?'].some(f => typeof deck.forms[f] !== 'string' || !deck.forms[f].trim())) { errors.push(`${where} у времени нужны правила forms для '+', '-' и '?'`); continue; }
+    if (!Array.isArray(deck.items) || !deck.items.length) { errors.push(`${where} нет предложений`); continue; }
+    const badRow = deck.items.find(r => !Array.isArray(r) || !['+', '-', '?'].includes(r[0]) || typeof r[1] !== 'string' || typeof r[2] !== 'string');
+    if (badRow) { errors.push(`${where} строка не по формату: ${JSON.stringify(badRow).slice(0, 80)}`); continue; }
+    deck.phrases = tenseItems(deck);
   }
   if (!Array.isArray(deck.phrases) || !deck.phrases.length) { errors.push(`${where} нет фраз`); continue; }
 

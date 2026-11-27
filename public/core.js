@@ -75,5 +75,22 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 /* Разметка заметок: *так* выделяется жирным. */
 const md = s => esc(s).replace(/\*([^*]+)\*/g, '<b>$1</b>');
 
-root.Core = { norm, swap, buildVariants, trapFor, wordSpans, esc, md, MAX_VARIANTS };
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+/* Тема-время: строка ['+', 'русское предложение', 'English sentence.|another version.', ловушки?, заметка?].
+   '+' утверждение, '-' отрицание, '?' вопрос. Правило формы берётся из forms темы.
+   Ловушка: [after, keys, say, start?]. Возвращает то же, что лежит в теме с фразами. */
+const FORM = { '+': 'утверждение', '-': 'отрицание', '?': 'вопрос' };
+function tenseItems(d) {
+  return d.items.map(([form, ru, en, traps, note]) => {
+    const list = en.split('|');
+    return {
+      id: d.id + '-' + slug(list[0]), ru, ctx: FORM[form] || String(form), form, en: list,
+      note: note || d.forms[form], rule: d.forms[form],
+      traps: (traps || []).map(([after, keys, say, start]) => start ? { after, keys, say, start: true } : { after, keys, say })
+    };
+  });
+}
+
+root.Core = { norm, swap, buildVariants, trapFor, wordSpans, esc, md, slug, tenseItems, MAX_VARIANTS };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const { norm, buildVariants, trapFor, wordSpans, esc, md } = window.Core;
+const { norm, buildVariants, trapFor, wordSpans, esc, md, slug, tenseItems } = window.Core;
 const Speech = window.Speech, Keyboard = window.Keyboard;
 const $ = id => document.getElementById(id);
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || '');
@@ -8,16 +8,15 @@ document.querySelectorAll('kbd.mod').forEach(k => { k.textContent = (isMac ? '�
 document.querySelectorAll('kbd.mod2').forEach(k => { k.textContent = (isMac ? '⌘' : 'Alt+') + k.textContent; });
 
 /* ---------- колоды ---------- */
-/* Два типа тем: фразы (русская фраза → английская) и слова (картинка → слово).
-   Слова приводятся к тому же виду, что и фразы, плюс img. */
-const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+/* Три типа тем: фразы (русская фраза → английская), времена (то же, но у каждой формы своё правило)
+   и слова (картинка → слово). Все приводятся к одному виду. */
 const DECKS = window.DECKS.map(d => Object.assign({}, d, {
   phrases: d.kind === 'words'
     ? d.words.map(([en, ru, pic, note]) => {
       const list = en.split('|'), s = slug(list[0]);
       return { id: d.id + '-' + s, en: list, ru, ctx: d.title.toLowerCase(), note: note || '', ask: d.ask || 'Что на картинке?', img: 'img/' + d.id + '/' + s + '.webp', vars: buildVariants(list) };
     })
-    : d.phrases.map(p => Object.assign({}, p, { vars: buildVariants(p.en) }))
+    : (d.kind === 'tense' ? tenseItems(d) : d.phrases).map(p => Object.assign({}, p, { vars: buildVariants(p.en) }))
 }));
 
 /* ---------- хранилище ---------- */
@@ -91,7 +90,7 @@ function startCard() {
   const cur = kind === 'trap' ? item.v : p.vars[0];
   A = { p, item, kind, rec, vars: locked ? [cur] : p.vars, cur, n: 0, ok: [], hint: [], miss: [], pause: {}, ghost: 0, glvl: 0, level: 0,
     revealed: false, wrong: '', msg: null, done: false, misses: 0, hinted: 0, slip: {}, trapped: false, lastT: now, shownAt: Date.now(), doneAt: 0,
-    gaps: null, words: null, endable: null, ruShown: false, blind: kind === 'recall' && !!rec && rec.box >= BLIND_FROM };
+    gaps: null, words: null, endable: null, free: false, blind: kind === 'recall' && !!rec && rec.box >= BLIND_FROM };
   if (kind === 'intro') A.ghost = cur.norm.length;
   if (kind === 'trap') { A.gaps = item.gaps; A.n = item.gaps[0].s; }
   $('pic').hidden = !p.img;
@@ -220,8 +219,8 @@ function memMiss() {
 function hint() {
   if (!A || A.done || ended) return;
   if (A.kind === 'intro') { setMsg('idle', A.p.img ? 'Слово уже на экране: спиши его.' : 'Фраза уже на экране: спиши её.'); render(); return; }
-  if (A.p.img && !A.ruShown) {                  // у слов первая подсказка — перевод: картинку можно понять по-разному
-    A.ruShown = true; setMsg('idle', 'Показал перевод. Это не считается подсказкой.'); render(); return;
+  if ((A.p.img || A.p.rule) && !A.free) {       // первая подсказка бесплатная: у слов перевод, у времён правило
+    A.free = true; setMsg('idle', A.p.img ? 'Показал перевод. Это не считается подсказкой.' : 'Показал правило. Это не считается подсказкой.'); render(); return;
   }
   startTimer(); armNudge();
   const t = A.cur.norm, len = t.length, gap = gapAt(A.n);
@@ -431,14 +430,17 @@ function render() {
   bar.style.background = done && g ? (g === 'g' ? 'var(--acc)' : g === 'y' ? 'var(--hint)' : 'var(--bad)') : '';
   ['g', 'y', 'r'].forEach(k => $('card').classList.toggle('done-' + k, done && g === k));
   const lvl = done || A.ghost <= n ? 0 : A.glvl;
-  const word = !!A.p.img, showRu = !word || A.ruShown || done || intro;
+  const word = !!A.p.img, showRu = !word || A.free || done || intro;
   $('ru').textContent = showRu ? A.p.ru : 'перевод: Tab';
   $('ru').classList.toggle('muted', !showRu);
-  const labels = word ? ['перевод', 'буква', 'слово'] : ['буква', 'слово', 'фраза'];
-  document.querySelectorAll('#steps i').forEach((e, i) => {
-    e.textContent = labels[i];
-    e.classList.toggle('on', word ? (i === 0 ? A.ruShown && !done : i <= lvl) : i + 1 <= lvl);
-  });
+  const showRule = !!A.p.rule && !done && (A.free || intro);
+  $('rule').hidden = !showRule;
+  if (showRule) $('rule').innerHTML = '<i class="tag">правило</i>' + md(A.p.rule);
+  /* Лесенка подсказок: бесплатная ступень (перевод или правило), потом буква, слово, фраза. */
+  const chip = (t, on) => '<i' + (on ? ' class="on"' : '') + '>' + t + '</i>';
+  const freeStep = word ? 'перевод' : A.p.rule ? 'правило' : '';
+  const paid = word ? [['буква', 1], ['слово', 3]] : [['буква', 1], ['слово', 2], ['фраза', 3]];
+  $('steps').innerHTML = (freeStep ? [chip(freeStep, A.free && !done)] : []).concat(paid.map(([t, l]) => chip(t, lvl >= l))).join('→');
   const ladder = !done && graded();
   $('hintBtn').hidden = done || intro; $('steps').hidden = !ladder; $('cost').hidden = !ladder;
   $('skipBtn').hidden = !(intro && !done && n === 0);
@@ -462,6 +464,10 @@ function renderMsg() {
       : A.kind === 'trap' ? 'Раунд ловушек: впиши слово ещё раз.'
       : A.kind === 'retry' ? 'То же слово ещё раз. Теперь без подсказок.'
       : esc(A.p.ask) + ' Печатай по-английски. <b>Tab</b> покажет перевод.';
+    return;
+  }
+  if (A.p.rule && A.kind === 'recall' && !A.blind && !A.free) {
+    m.innerHTML = (A.item.viaIntro ? 'То же предложение, теперь по памяти.' : 'Печатай по-английски в нужном времени.') + ' <b>Tab</b> покажет правило.';
     return;
   }
   m.innerHTML = A.kind === 'intro' ? 'Новая фраза. Спиши её, глядя на образец. Уже знаешь? <b>Enter</b> — сразу по памяти.'
@@ -578,7 +584,8 @@ function drawDecks() {
   $('deckGrid').innerHTML = DECKS.map((d, i) => {
     const words = d.kind === 'words', n = d.phrases.length;
     const seen = d.phrases.filter(p => S.cards[p.id]), due = seen.filter(p => S.cards[p.id].due <= t).length;
-    const head = (words ? 'Слова по картинкам' : 'Фразы') !== last ? '<div class="gh">' + (last = words ? 'Слова по картинкам' : 'Фразы') + '</div>' : '';
+    const section = words ? 'Слова по картинкам' : d.kind === 'tense' ? 'Времена' : 'Фразы';
+    const head = section !== last ? '<div class="gh">' + (last = section) + '</div>' : '';
     return head + '<button class="dk' + (i === sel ? ' sel' : '') + '" data-i="' + i + '"><b>' + esc(d.title) + '</b><span>' + esc(d.sub) + '</span>' +
       '<em>' + n + ' ' + (words ? plural(n, 'слово', 'слова', 'слов') : plural(n, 'фраза', 'фразы', 'фраз')) + ' · в памяти ' + seen.length +
       (due ? ' · <u>сегодня ' + due + '</u>' : '') + '</em></button>';
@@ -586,7 +593,7 @@ function drawDecks() {
   const s = $('deckGrid').querySelector('.sel');
   if (s && s.scrollIntoView) s.scrollIntoView({ block: 'nearest' });
 }
-function openModal() { sel = Math.max(0, DECKS.findIndex(d => d.id === S.deck)); drawDecks(); $('modal').hidden = false; }
+function openModal() { sel = Math.max(0, DECKS.findIndex(d => d.id === S.deck)); $('modal').hidden = false; drawDecks(); }
 function closeModal() { $('modal').hidden = true; }
 function pickDeck(i) {
   const d = DECKS[i]; if (!d) return;

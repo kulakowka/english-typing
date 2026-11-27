@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>english_typing — английские фразы и слова по памяти</title>
-<meta name="description" content="Тренажёр английского: видишь русскую фразу или фотографию, печатаешь по-английски по памяти. 640 фраз и 576 слов с картинками, подсказки, ловушки русскоязычных, повторы по дням. Бесплатно, без регистрации.">
+<title>english_typing — английские фразы, времена и слова по памяти</title>
+<meta name="description" content="Тренажёр английского: видишь русскую фразу или фотографию, печатаешь по-английски по памяти. 640 фраз, 8 времён и 576 слов с картинками, подсказки, ловушки русскоязычных, повторы по дням. Бесплатно, без регистрации.">
 <link rel="canonical" href="https://english.antonkulakov.com/">
 <meta name="theme-color" content="#18181a">
 <meta property="og:type" content="website">
@@ -59,13 +59,14 @@
       <div class="fields">
         <i class="tag">RU</i><div id="ru"></div>
         <i class="tag en">EN</i><div id="line" aria-label="Поле ответа"></div>
+        <div id="rule" hidden></div>
         <div id="msg" aria-live="polite"></div>
         <div id="after" hidden></div>
       </div>
     </div>
     <div class="foot">
       <button id="hintBtn" class="btn" title="Подсказка: буква, потом слово, потом вся фраза">Подсказка <kbd>Tab</kbd></button>
-      <span id="steps" class="steps"><i data-l="1">буква</i>→<i data-l="2">слово</i>→<i data-l="3">фраза</i></span>
+      <span id="steps" class="steps"></span>
       <span id="cost" class="cost">с подсказкой вернётся раньше</span>
       <button id="skipBtn" class="btn" hidden title="Пропустить знакомство и сразу печатать по памяти">Знаю эту фразу <kbd>Enter</kbd></button>
       <span class="spacer"></span>
@@ -151,6 +152,14 @@
 <script src="phrases/interview.js"></script>
 <script src="phrases/it.js"></script>
 <script src="phrases/phrasal.js"></script>
+<script src="tenses/present-simple.js"></script>
+<script src="tenses/present-continuous.js"></script>
+<script src="tenses/past-simple.js"></script>
+<script src="tenses/past-continuous.js"></script>
+<script src="tenses/future-simple.js"></script>
+<script src="tenses/going-to.js"></script>
+<script src="tenses/present-perfect.js"></script>
+<script src="tenses/past-perfect.js"></script>
 <script src="words/food.js"></script>
 <script src="words/kitchen.js"></script>
 <script src="words/home.js"></script>

@@ -90,6 +90,9 @@ main{flex:1;max-width:960px;width:100%;margin:0 auto;padding:4px 28px 24px}
 .w.slow{text-decoration:underline dotted #ffffff66;text-underline-offset:7px}
 .tail{color:var(--faint)}
 
+#rule{grid-column:2;font-size:14px;line-height:1.5;color:var(--ink);background:#ffd23f0d;border-left:2px solid var(--hint);border-radius:0 8px 8px 0;padding:7px 11px;margin:2px 0 6px}
+#rule .tag{margin-right:8px;color:var(--hint);border-color:#ffd23f55}
+#rule b{font:600 13px var(--mono);color:var(--acc)}
 #msg{grid-column:2;min-height:22px;font-size:14px;line-height:1.5;color:var(--dim);margin-top:2px}
 #msg.bad{color:#ffb3ae}#msg.trap{color:var(--hint)}#msg.hint{color:var(--hint)}#msg.warn{color:var(--ink)}#msg.ok{color:var(--acc)}
 #msg b{font-weight:600}
