@@ -8,7 +8,17 @@ document.querySelectorAll('kbd.mod').forEach(k => { k.textContent = (isMac ? '�
 document.querySelectorAll('kbd.mod2').forEach(k => { k.textContent = (isMac ? '⌘' : 'Alt+') + k.textContent; });
 
 /* ---------- колоды ---------- */
-const DECKS = window.DECKS.map(d => Object.assign({}, d, { phrases: d.phrases.map(p => Object.assign({}, p, { vars: buildVariants(p.en) })) }));
+/* Два типа тем: фразы (русская фраза → английская) и слова (картинка → слово).
+   Слова приводятся к тому же виду, что и фразы, плюс img. */
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const DECKS = window.DECKS.map(d => Object.assign({}, d, {
+  phrases: d.kind === 'words'
+    ? d.words.map(([en, ru, pic, note]) => {
+      const list = en.split('|'), s = slug(list[0]);
+      return { id: d.id + '-' + s, en: list, ru, ctx: d.title.toLowerCase(), note: note || '', img: 'img/' + d.id + '/' + s + '.webp', vars: buildVariants(list) };
+    })
+    : d.phrases.map(p => Object.assign({}, p, { vars: buildVariants(p.en) }))
+}));
 
 /* ---------- хранилище ---------- */
 const KEY = 'english.v1';
@@ -22,8 +32,10 @@ const deck = () => DECKS.find(d => d.id === S.deck);
 
 const IV = [0, 1, 3, 7, 16, 35];                // ступени: через сколько дней фраза вернётся
 const STEP_NAMES = ['новые', '1 день', '3 дня', '7 дней', '16 дней', '35 дней'];
-const SESSION = 6;                              // фраз в сессии
-const NEW_MAX = 4;                              // из них новых, не больше
+const isWords = () => deck().kind === 'words';
+const sessionSize = () => isWords() ? 9 : 6;    // карточек в сессии: слова короче, их больше
+const newMax = () => isWords() ? 6 : 4;         // из них новых, не больше
+const unit = n => isWords() ? plural(n, 'слово', 'слова', 'слов') : plural(n, 'фраза', 'фразы', 'фраз');
 const BLIND_FROM = 2;                           // с этой ступени чёрточек нет
 const TRAP_MAX = 4;                             // фраз в раунде ловушек
 
@@ -48,7 +60,7 @@ let results = [], sessTraps = new Map();
 let cleanCh = 0, hintCh = 0, keysOk = 0, keysBad = 0, t0 = 0, secs = 0, timer = 0, nudge = 0;
 
 function plan() {
-  const t = today(), ps = deck().phrases;
+  const t = today(), ps = deck().phrases, SESSION = sessionSize(), NEW_MAX = newMax();
   const due = ps.filter(p => S.cards[p.id] && S.cards[p.id].due <= t).sort((a, b) => S.cards[a.id].due - S.cards[b.id].due);
   const fresh = ps.filter(p => !S.cards[p.id]);
   const dueN = Math.min(due.length, SESSION), freshN = Math.min(fresh.length, SESSION - dueN, NEW_MAX);
@@ -66,6 +78,7 @@ function newSession() {
   results = []; sessTraps = new Map();
   cleanCh = hintCh = keysOk = keysBad = 0; t0 = 0; secs = 0; clearInterval(timer);
   Speech.stop();
+  Q.forEach(it => { if (it.p.img) new Image().src = it.p.img; });      // картинки сессии грузим заранее
   $('end').hidden = true; $('card').hidden = false; $('legend').hidden = false;
   document.body.classList.remove('ended');
   startCard(); stats();
@@ -78,18 +91,19 @@ function startCard() {
   const cur = kind === 'trap' ? item.v : p.vars[0];
   A = { p, item, kind, rec, vars: locked ? [cur] : p.vars, cur, n: 0, ok: [], hint: [], miss: [], pause: {}, ghost: 0, glvl: 0, level: 0,
     revealed: false, wrong: '', msg: null, done: false, misses: 0, hinted: 0, slip: {}, trapped: false, lastT: now, shownAt: Date.now(), doneAt: 0,
-    gaps: null, words: null, endable: null, blind: kind === 'recall' && !!rec && rec.box >= BLIND_FROM };
+    gaps: null, words: null, endable: null, ruShown: false, blind: kind === 'recall' && !!rec && rec.box >= BLIND_FROM };
   if (kind === 'intro') A.ghost = cur.norm.length;
   if (kind === 'trap') { A.gaps = item.gaps; A.n = item.gaps[0].s; }
-  $('ru').textContent = p.ru;
+  $('pic').hidden = !p.img;
+  if (p.img && $('picImg').getAttribute('src') !== p.img) $('picImg').src = p.img;
   $('ctx').textContent = p.ctx;
-  $('kind').textContent = kind === 'intro' ? 'новая фраза' : kind === 'retry' ? 'ещё раз' : kind === 'trap' ? 'ловушки' : extra ? 'вне расписания' : rec ? 'повтор' : 'по памяти';
+  $('kind').textContent = kind === 'intro' ? (p.img ? 'новое слово' : 'новая фраза') : kind === 'retry' ? 'ещё раз' : kind === 'trap' ? 'ловушки' : extra ? 'вне расписания' : rec ? 'повтор' : 'по памяти';
   $('blindChip').hidden = !A.blind;
   const box = rec ? rec.box : 0;
   $('pips').innerHTML = pipsHtml(box);
   $('pipLabel').textContent = rec ? 'ступень ' + box + ' из 5' : 'ещё не в памяти';
   $('after').hidden = true; $('after').innerHTML = '';
-  $('card').className = 'card' + (document.hasFocus() ? '' : ' blurred');
+  $('card').className = 'card' + (p.img ? ' word' : '') + (document.hasFocus() ? '' : ' blurred');
   if (kind === 'intro' && gesture) listen(false);
   armNudge(); render();
 }
@@ -205,7 +219,10 @@ function memMiss() {
 }
 function hint() {
   if (!A || A.done || ended) return;
-  if (A.kind === 'intro') { setMsg('idle', 'Фраза уже на экране: спиши её.'); render(); return; }
+  if (A.kind === 'intro') { setMsg('idle', A.p.img ? 'Слово уже на экране: спиши его.' : 'Фраза уже на экране: спиши её.'); render(); return; }
+  if (A.p.img && !A.ruShown) {                  // у слов первая подсказка — перевод: картинку можно понять по-разному
+    A.ruShown = true; setMsg('idle', 'Показал перевод. Это не считается подсказкой.'); render(); return;
+  }
   startTimer(); armNudge();
   const t = A.cur.norm, len = t.length, gap = gapAt(A.n);
   let we = t.indexOf(' ', A.n + 1); if (we < 0) we = len;
@@ -216,15 +233,17 @@ function hint() {
     setMsg('hint', 'Открыл слово. Напечатай его: пальцы тоже должны запомнить.');
     render(); return;
   }
+  const word = !!A.p.img;
   let lvl = Math.min(3, A.level + 1);
   if (lvl === 1 && A.ghost > A.n) lvl = 2;
+  if (word && lvl === 2) lvl = 3;               // у слова после буквы открывается сразу всё
   A.level = lvl;
-  if (lvl === 1) { A.ghost = A.n + 1; A.glvl = 1; setMsg('hint', 'Открыл букву. Фраза уже не «по памяти»: вернётся завтра.'); }
+  if (lvl === 1) { A.ghost = A.n + 1; A.glvl = 1; setMsg('hint', word ? 'Открыл букву. Слово уже не «по памяти»: вернётся завтра.' : 'Открыл букву. Фраза уже не «по памяти»: вернётся завтра.'); }
   else if (lvl === 2) {
     if (A.ghost >= we) setMsg('hint', 'Слово уже открыто. Ещё раз <b>Tab</b> — вся фраза.');
     else { A.ghost = we; setMsg('hint', 'Открыл слово. Ещё раз <b>Tab</b> — вся фраза.'); }
     A.glvl = Math.max(A.glvl, 2);
-  } else { A.ghost = len; A.glvl = 3; A.revealed = true; setMsg('hint', 'Открыл фразу. Перепечатай её: спрошу ещё раз через пару фраз.'); }
+  } else { A.ghost = len; A.glvl = 3; A.revealed = true; setMsg('hint', word ? 'Открыл слово. Перепечатай его: спрошу ещё раз через пару карточек.' : 'Открыл фразу. Перепечатай её: спрошу ещё раз через пару фраз.'); }
   render();
 }
 function skipIntro() {
@@ -315,17 +334,17 @@ function complete() {
   renderAfter(again); listen(false);
 }
 function renderAfter(again) {
-  const el = $('after'), noteHtml = '<div class="note">' + md(A.p.note) + '</div>';
+  const el = $('after'), noteHtml = A.p.note ? '<div class="note">' + md(A.p.note) + '</div>' : '';
   if (A.kind === 'intro') {
-    el.innerHTML = '<div class="verdict"><i class="dot n"></i>Познакомились. <small>Скоро спрошу её по памяти.</small></div>' + noteHtml;
+    el.innerHTML = '<div class="verdict"><i class="dot n"></i>Познакомились. <small>Скоро спрошу ' + (A.p.img ? 'его' : 'её') + ' по памяти.</small></div>' + noteHtml;
   } else if (A.kind === 'trap') {
     el.innerHTML = '<div class="verdict"><i class="dot ' + A.grade + '"></i>' + (A.grade === 'g' ? 'Теперь чисто.' : 'Пока сыро.') +
-      ' <small>Фраза вернётся ' + rel(S.cards[A.p.id].due - today()) + '.</small></div>';
+      ' <small>' + (A.p.img ? 'Слово' : 'Фраза') + ' вернётся ' + rel(S.cards[A.p.id].due - today()) + '.</small></div>';
   } else {
     const rec = S.cards[A.p.id], d = rec.due - today(), g = A.grade, retry = A.kind === 'retry';
     const trapLater = sessTraps.has(A.p.id);
     const back = again ? 'Спрошу ещё раз через пару карточек, потом ' + rel(d) + '.'
-      : trapLater ? 'В конце сессии спрошу слова, на которых ты споткнулся. Фраза вернётся ' + rel(d) + '.'
+      : trapLater ? (A.p.img ? 'В конце сессии спрошу ещё раз. Слово вернётся ' : 'В конце сессии спрошу слова, на которых ты споткнулся. Фраза вернётся ') + rel(d) + '.'
       : 'Вернётся ' + rel(d) + '.';
     const head = g === 'g' ? (retry ? 'Вот теперь по памяти.' : A.rec ? 'По памяти.' : 'По памяти с первого раза.')
       : g === 'y' ? (A.hinted ? 'С подсказкой.' : A.trapped ? 'Попался в ловушку.' : 'С промахами.') : 'Пока не в памяти.';
@@ -412,7 +431,14 @@ function render() {
   bar.style.background = done && g ? (g === 'g' ? 'var(--acc)' : g === 'y' ? 'var(--hint)' : 'var(--bad)') : '';
   ['g', 'y', 'r'].forEach(k => $('card').classList.toggle('done-' + k, done && g === k));
   const lvl = done || A.ghost <= n ? 0 : A.glvl;
-  document.querySelectorAll('#steps i').forEach(e => e.classList.toggle('on', +e.dataset.l <= lvl));
+  const word = !!A.p.img, showRu = !word || A.ruShown || done || intro;
+  $('ru').textContent = showRu ? A.p.ru : 'перевод: Tab';
+  $('ru').classList.toggle('muted', !showRu);
+  const labels = word ? ['перевод', 'буква', 'слово'] : ['буква', 'слово', 'фраза'];
+  document.querySelectorAll('#steps i').forEach((e, i) => {
+    e.textContent = labels[i];
+    e.classList.toggle('on', word ? (i === 0 ? A.ruShown && !done : i <= lvl) : i + 1 <= lvl);
+  });
   const ladder = !done && graded();
   $('hintBtn').hidden = done || intro; $('steps').hidden = !ladder; $('cost').hidden = !ladder;
   $('skipBtn').hidden = !(intro && !done && n === 0);
@@ -431,6 +457,13 @@ function renderMsg() {
   if (A.msg) { m.className = A.msg.kind; m.innerHTML = A.msg.html; return; }
   m.className = '';
   if (A.n && A.kind !== 'trap') { m.innerHTML = ''; return; }
+  if (A.p.img) {
+    m.innerHTML = A.kind === 'intro' ? 'Новое слово. Спиши его, глядя на образец. Уже знаешь? <b>Enter</b> — сразу по памяти.'
+      : A.kind === 'trap' ? 'Раунд ловушек: впиши слово ещё раз.'
+      : A.kind === 'retry' ? 'То же слово ещё раз. Теперь без подсказок.'
+      : 'Что на картинке? Печатай по-английски. <b>Tab</b> покажет перевод.';
+    return;
+  }
   m.innerHTML = A.kind === 'intro' ? 'Новая фраза. Спиши её, глядя на образец. Уже знаешь? <b>Enter</b> — сразу по памяти.'
     : A.kind === 'trap' ? (A.n === A.gaps[0].s ? 'Раунд ловушек: впиши только пропущенные слова.' : '')
     : A.kind === 'retry' ? 'Та же фраза ещё раз. Теперь без подсказок.'
@@ -473,7 +506,7 @@ function renderEnd(idle) {
   const t = today(), ps = deck().phrases;
   if (idle) {
     $('eBig').innerHTML = 'На сегодня всё';
-    $('eSub').textContent = 'Все фразы темы на своих ступенях. Лучшее, что можно сделать для памяти сейчас, — подождать.';
+    $('eSub').textContent = (isWords() ? 'Все слова темы' : 'Все фразы темы') + ' на своих ступенях. Лучшее, что можно сделать для памяти сейчас, — подождать.';
     $('eRecap').hidden = true;
   } else {
     const g = results.filter(r => r.grade === 'g').length, n = results.length;
@@ -484,8 +517,9 @@ function renderEnd(idle) {
     $('eRecap').hidden = false;
     $('eRecap').innerHTML = results.map(r => {
       const rec = S.cards[r.p.id];
-      return '<div class="rrow"><i class="dot ' + r.grade + '"></i><div><div class="ren">' + wordsHtml(r) + '</div><div class="rru">' + esc(r.p.ru) +
-        (r.fixed ? ' · <em>в конце уже чисто</em>' : '') + '</div></div>' +
+      return '<div class="rrow"><i class="dot ' + r.grade + '"></i><div class="rw">' + (r.p.img ? '<img class="thumb" src="' + esc(r.p.img) + '" alt="">' : '') +
+        '<div><div class="ren">' + wordsHtml(r) + '</div><div class="rru">' + esc(r.p.ru) +
+        (r.fixed ? ' · <em>в конце уже чисто</em>' : '') + '</div></div></div>' +
         '<div class="rdue"><span>' + rel(rec.due - t) + '</span><span class="pips">' + pipsHtml(rec.box) + '</span></div></div>';
     }).join('') + '<div class="rlegend"><span><i class="dot g"></i>по памяти</span><span><i class="dot y"></i>с подсказкой или ловушкой</span><span><i class="dot r"></i>подсмотрел</span><span><u>пунктир</u> — задумался</span></div>';
   }
@@ -511,13 +545,13 @@ function renderEnd(idle) {
   const seen = ps.map(p => S.cards[p.id]).filter(Boolean), later = seen.filter(c => c.due > t), nx = plan();
   const known = seen.filter(c => c.box >= 3).length, s = streak();
   let line = 'Серия: ' + s + ' ' + plural(s, 'день', 'дня', 'дней') + '. Надолго в памяти: ' + known + ' из ' + ps.length + '. ';
-  if (later.length) { const m = Math.min(...later.map(c => c.due)), k = later.filter(c => c.due === m).length; line += 'Ближайший повтор ' + rel(m - t) + ': ' + k + ' ' + plural(k, 'фраза', 'фразы', 'фраз') + '.'; }
+  if (later.length) { const m = Math.min(...later.map(c => c.due)), k = later.filter(c => c.due === m).length; line += 'Ближайший повтор ' + rel(m - t) + ': ' + k + ' ' + unit(k) + '.'; }
   $('eNext').textContent = line;
   // ловушки по словам
   const words = Object.values(S.words).sort((a, b) => b.n - a.n || b.last - a.last).slice(0, 14);
   $('eWordsBox').hidden = !words.length;
   $('eWords').innerHTML = words.map(w => '<span class="chip">' + esc(w.t) + (w.n > 1 ? '<small>×' + w.n + '</small>' : '') + '</span>').join('');
-  $('againBtn').innerHTML = (nx.extra ? 'Потренировать вне расписания' : 'Ещё раунд: ' + nx.items.length + ' ' + plural(nx.items.length, 'фраза', 'фразы', 'фраз') +
+  $('againBtn').innerHTML = (nx.extra ? 'Потренировать вне расписания' : 'Ещё раунд: ' + nx.items.length + ' ' + unit(nx.items.length) +
     (nx.fresh ? ', новых ' + nx.fresh : '')) + ' <kbd>Enter</kbd>';
   $('ffBtn').hidden = !DEBUG;
   if (DEBUG) { const delta = ffDelta(); $('ffBtn').innerHTML = 'Отладка: +' + delta + ' ' + plural(delta, 'день', 'дня', 'дней') + ' <kbd>D</kbd>'; }
@@ -540,12 +574,17 @@ let sel = 0;
 const modalOpen = () => !$('modal').hidden;
 function drawDecks() {
   const t = today();
+  let last = '';
   $('deckGrid').innerHTML = DECKS.map((d, i) => {
+    const words = d.kind === 'words', n = d.phrases.length;
     const seen = d.phrases.filter(p => S.cards[p.id]), due = seen.filter(p => S.cards[p.id].due <= t).length;
-    return '<button class="dk' + (i === sel ? ' sel' : '') + '" data-i="' + i + '"><b>' + esc(d.title) + '</b><span>' + esc(d.sub) + '</span>' +
-      '<em>' + d.phrases.length + ' ' + plural(d.phrases.length, 'фраза', 'фразы', 'фраз') + ' · в памяти ' + seen.length +
+    const head = (words ? 'Слова по картинкам' : 'Фразы') !== last ? '<div class="gh">' + (last = words ? 'Слова по картинкам' : 'Фразы') + '</div>' : '';
+    return head + '<button class="dk' + (i === sel ? ' sel' : '') + '" data-i="' + i + '"><b>' + esc(d.title) + '</b><span>' + esc(d.sub) + '</span>' +
+      '<em>' + n + ' ' + (words ? plural(n, 'слово', 'слова', 'слов') : plural(n, 'фраза', 'фразы', 'фраз')) + ' · в памяти ' + seen.length +
       (due ? ' · <u>сегодня ' + due + '</u>' : '') + '</em></button>';
   }).join('');
+  const s = $('deckGrid').querySelector('.sel');
+  if (s && s.scrollIntoView) s.scrollIntoView({ block: 'nearest' });
 }
 function openModal() { sel = Math.max(0, DECKS.findIndex(d => d.id === S.deck)); drawDecks(); $('modal').hidden = false; }
 function closeModal() { $('modal').hidden = true; }
@@ -594,7 +633,7 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     if (A.kind === 'intro' && A.n === 0) { if (!e.repeat && Date.now() - A.shownAt > 400) skipIntro(); return; }
     if (A.endable) { if (!e.repeat) endHere(); return; }
-    A.wrong = ''; setMsg('idle', /^[.?!]$/.test(A.cur.norm.slice(A.n)) ? 'Остался знак в конце фразы.' : 'Enter сработает, когда фраза дописана. Застрял — <b>Tab</b>.'); render(); return;
+    A.wrong = ''; setMsg('idle', /^[.?!]$/.test(A.cur.norm.slice(A.n)) ? 'Остался знак в конце фразы.' : 'Enter сработает, когда всё дописано. Застрял — <b>Tab</b>.'); render(); return;
   }
   if (e.key === 'Backspace') { e.preventDefault(); A.wrong = ''; setMsg('idle', 'Стирать нечего: неверные буквы не вводятся.'); render(); return; }
   if (e.altKey || e.key.length !== 1) return;

@@ -2,7 +2,7 @@
 /* Проверка колод: node tools/check-phrases.mjs [id колоды — показать только её ошибки]
    Ловит то, что сломает тренажёр или запутает ученика: дубли id, недостижимые ловушки,
    символы, которых нет на клавиатуре, слишком длинные фразы. */
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
@@ -13,12 +13,16 @@ ctx.window = ctx;
 ctx.DECKS = [];
 const load = f => vm.runInContext(readFileSync(f, 'utf8'), ctx, { filename: f });
 load(join(root, 'core.js'));
-const dir = join(root, 'phrases');
 const only = process.argv[2] || '';
 const errors = [], warns = [];
-for (const f of readdirSync(dir).filter(f => f.endsWith('.js')).sort()) {
-  try { load(join(dir, f)); } catch (e) { errors.push(`[${f.replace(/\.js$/, '')}] файл не загрузился: ${e.message}`); }
+for (const sub of ['phrases', 'words']) {
+  const dir = join(root, sub);
+  if (!existsSync(dir)) continue;
+  for (const f of readdirSync(dir).filter(f => f.endsWith('.js')).sort()) {
+    try { load(join(dir, f)); } catch (e) { errors.push(`[${f.replace(/\.js$/, '')}] файл не загрузился: ${e.message}`); }
+  }
 }
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 const { norm, buildVariants, MAX_VARIANTS } = ctx.Core;
 const ids = new Set(), rus = new Map(), targets = new Map();
@@ -27,6 +31,27 @@ const MAX_LEN = 64, MIN_WORDS = 2, MAX_WORDS = 11;
 for (const deck of ctx.DECKS) {
   const where = `[${deck.id}]`;
   for (const k of ['id', 'title', 'sub']) if (!deck[k] || typeof deck[k] !== 'string') errors.push(`${where} у колоды нет поля ${k}`);
+
+  /* Тема со словами: строка ['слово|варианты', 'перевод', 'что на картинке'], у каждого слова есть картинка. */
+  if (deck.kind === 'words') {
+    if (!Array.isArray(deck.words) || !deck.words.length) { errors.push(`${where} нет слов`); continue; }
+    for (const w of deck.words) {
+      const at = `${where} ${Array.isArray(w) ? w[0] : JSON.stringify(w)}`, err = m => errors.push(`${at}: ${m}`);
+      if (!Array.isArray(w) || w.length < 3 || w.slice(0, 3).some(x => typeof x !== 'string' || !x.trim())) { err('нужна строка из трёх частей: слово, перевод, описание картинки'); continue; }
+      const list = w[0].split('|'), id = deck.id + '-' + slug(list[0]);
+      if (ids.has(id)) err('слово повторяется в теме'); ids.add(id);
+      if (rus.has(w[1])) err(`перевод «${w[1]}» уже есть в ${rus.get(w[1])}`); rus.set(w[1], id);
+      for (const e of list) {
+        if (e !== e.trim() || /\s\s/.test(e) || !e) err(`«${e}»: лишние пробелы`);
+        if (/[^A-Za-z0-9 '-]/.test(e)) err(`«${e}»: в слове только буквы, цифры, пробел, дефис и апостроф`);
+        if (e.split(' ').length > 3) err(`«${e}»: больше трёх слов`);
+        const k = norm(e);
+        if (targets.has(k)) err(`«${e}» уже есть в ${targets.get(k)}`); else targets.set(k, id);
+      }
+      if (!existsSync(join(root, 'img', deck.id, slug(list[0]) + '.webp'))) err(`нет картинки img/${deck.id}/${slug(list[0])}.webp`);
+    }
+    continue;
+  }
   if (!Array.isArray(deck.phrases) || !deck.phrases.length) { errors.push(`${where} нет фраз`); continue; }
 
   for (const p of deck.phrases) {
@@ -92,9 +117,11 @@ for (const deck of ctx.DECKS) {
   }
 }
 
-const total = ctx.DECKS.reduce((n, d) => n + (d.phrases ? d.phrases.length : 0), 0);
+const size = d => (d.kind === 'words' ? d.words : d.phrases || []).length;
+const total = ctx.DECKS.filter(d => d.kind !== 'words').reduce((n, d) => n + size(d), 0);
+const totalWords = ctx.DECKS.filter(d => d.kind === 'words').reduce((n, d) => n + size(d), 0);
 const mine = line => !only || line.startsWith(`[${only}]`);
 for (const w of warns.filter(mine)) console.log('! ' + w);
 for (const e of errors.filter(mine)) console.log('✗ ' + e);
-console.log(`\n${ctx.DECKS.map(d => `${d.id}: ${d.phrases ? d.phrases.length : 0}`).join(', ')} · всего ${total} · ошибок ${errors.filter(mine).length}${only ? ` в ${only} (во всех колодах ${errors.length})` : ''} · предупреждений ${warns.filter(mine).length}`);
+console.log(`\n${ctx.DECKS.map(d => `${d.id}: ${size(d)}`).join(', ')} · фраз ${total}, слов ${totalWords} · ошибок ${errors.filter(mine).length}${only ? ` в ${only} (во всех колодах ${errors.length})` : ''} · предупреждений ${warns.filter(mine).length}`);
 process.exit(errors.filter(mine).length ? 1 : 0);
